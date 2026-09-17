@@ -3,7 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(Renderer))]
 public class CubeView : MonoBehaviour
 {
-    private void Awake()
+    public void SetRandomColor()
     {
         GetComponent<Renderer>().material.color = new Color(
             Random.value,

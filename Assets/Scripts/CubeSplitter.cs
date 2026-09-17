@@ -1,7 +1,8 @@
-using System;
 using UnityEngine;
 
 [RequireComponent(typeof(CubeInputReader))]
+[RequireComponent(typeof(CubeView))]
+[RequireComponent(typeof(CubePhysics))]
 public class CubeSplitter : MonoBehaviour
 {
     [Header("Настройки разделения")]
@@ -16,13 +17,17 @@ public class CubeSplitter : MonoBehaviour
     [SerializeField] private float _explosionRadius = 2f;
 
     private CubeInputReader _cubeInputReader;
+    private CubeSpawner _cubeSpawner;
+    private CubeView _cubeView;
+    private CubePhysics _cubePhysics;
     private float _currentSplitChance;
-
-    public event Action<Vector3, float, float> ExplosionOccurred;
 
     private void Awake()
     {
         _cubeInputReader = GetComponent<CubeInputReader>();
+        _cubeView = GetComponent<CubeView>();
+        _cubePhysics = GetComponent<CubePhysics>();
+        _cubeSpawner = FindObjectOfType<CubeSpawner>();
         _currentSplitChance = _initialSplitChance;
     }
 
@@ -34,6 +39,16 @@ public class CubeSplitter : MonoBehaviour
     private void OnDisable()
     {
         _cubeInputReader.Clicked -= OnClicked;
+    }
+
+    public void SetRandomColor()
+    {
+        _cubeView.SetRandomColor();
+    }
+
+    public void ApplyExplosion(Vector3 center, float force, float radius)
+    {
+        _cubePhysics.Explode(center, force, radius);
     }
 
     public void SetSplitChance(float chance)
@@ -62,26 +77,11 @@ public class CubeSplitter : MonoBehaviour
         for (int i = 0; i < childCount; i++)
         {
             Vector3 randomOffset = UnityEngine.Random.insideUnitSphere * 0.3f;
-            CreateChild(spawnPosition + randomOffset, childScale, childChance);
+            CubeSplitter child = _cubeSpawner.Spawn(spawnPosition + randomOffset, childScale, childChance);
+            child.SetRandomColor();
+            child.ApplyExplosion(spawnPosition, _explosionForce, _explosionRadius);
         }
 
-        ExplosionOccurred?.Invoke(spawnPosition, _explosionForce, _explosionRadius);
-
         Destroy(gameObject);
-    }
-
-    private void CreateChild(Vector3 position, Vector3 scale, float chance)
-    {
-        GameObject childObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        childObject.transform.position = position;
-        childObject.transform.localScale = scale;
-
-        childObject.AddComponent<Rigidbody>();
-        childObject.AddComponent<CubeInputReader>();
-        CubeSplitter childSplitter = childObject.AddComponent<CubeSplitter>();
-        childObject.AddComponent<CubeView>();
-        childObject.AddComponent<CubePhysics>();
-
-        childSplitter.SetSplitChance(chance);
     }
 }
