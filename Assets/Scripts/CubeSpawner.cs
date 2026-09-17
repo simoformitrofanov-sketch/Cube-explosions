@@ -23,4 +23,17 @@ public class CubeSpawner : MonoBehaviour
         cube.GetComponent<Rigidbody>()
             .AddExplosionForce(force, center, radius, 1f, ForceMode.Impulse);
     }
+
+    public void Explode(Vector3 center, float force, float radius)
+    {
+        Collider[] colliders = Physics.OverlapSphere(center, radius);
+
+        foreach (Collider collider in colliders)
+        {
+            if (collider.TryGetComponent<Rigidbody>(out Rigidbody rigidbody))
+            {
+                rigidbody.AddExplosionForce(force, center, radius, 1f, ForceMode.Impulse);
+            }
+        }
+    }
 }

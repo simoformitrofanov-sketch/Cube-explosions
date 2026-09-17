@@ -13,8 +13,8 @@ public class CubeSplitter : MonoBehaviour
     [SerializeField] private float _scaleMultiplier = 0.5f;
 
     [Header("Взрыв")]
-    [SerializeField] private float _explosionForce = 5f;
-    [SerializeField] private float _explosionRadius = 2f;
+    [SerializeField] private float _baseExplosionForce = 5f;
+    [SerializeField] private float _baseExplosionRadius = 2f;
 
     private void OnEnable()
     {
@@ -30,11 +30,22 @@ public class CubeSplitter : MonoBehaviour
     {
         if (UnityEngine.Random.value > cube.CurrentSplitChance)
         {
-            _spawner.Destroy(cube);
+            ExplodeCube(cube);
             return;
         }
 
         Split(cube);
+    }
+
+    private void ExplodeCube(Cube cube)
+    {
+        float scale = cube.transform.localScale.x;
+        float force = _baseExplosionForce / scale;
+        float radius = _baseExplosionRadius / scale;
+        Vector3 center = cube.transform.position;
+
+        _spawner.Explode(center, force, radius);
+        _spawner.Destroy(cube);
     }
 
     private void Split(Cube parent)
@@ -48,7 +59,7 @@ public class CubeSplitter : MonoBehaviour
         {
             Vector3 randomOffset = UnityEngine.Random.insideUnitSphere * 0.3f;
             Cube child = _spawner.Spawn(spawnPosition + randomOffset, childScale, childChance);
-            _spawner.ApplyExplosion(child, spawnPosition, _explosionForce, _explosionRadius);
+            _spawner.ApplyExplosion(child, spawnPosition, _baseExplosionForce, _baseExplosionRadius);
         }
 
         _spawner.Destroy(parent);
