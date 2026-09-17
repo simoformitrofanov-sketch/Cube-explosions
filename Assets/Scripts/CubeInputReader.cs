@@ -1,13 +1,23 @@
 using System;
 using UnityEngine;
 
-[RequireComponent(typeof(Collider))]
 public class CubeInputReader : MonoBehaviour
 {
-    public event Action Clicked;
+    public event Action<Cube> CubeClicked;
 
-    private void OnMouseDown()
+    private void Update()
     {
-        Clicked?.Invoke();
+        if (Input.GetMouseButtonDown(0))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                if (hit.collider.TryGetComponent<Cube>(out Cube cube))
+                {
+                    CubeClicked?.Invoke(cube);
+                }
+            }
+        }
     }
 }

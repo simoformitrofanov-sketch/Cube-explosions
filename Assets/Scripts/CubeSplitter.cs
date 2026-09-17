@@ -1,14 +1,14 @@
 using UnityEngine;
 
-[RequireComponent(typeof(CubeInputReader))]
-[RequireComponent(typeof(CubeView))]
-[RequireComponent(typeof(CubePhysics))]
 public class CubeSplitter : MonoBehaviour
 {
+    [Header("Ссылки")]
+    [SerializeField] private CubeSpawner _spawner;
+    [SerializeField] private CubeInputReader _inputReader;
+
     [Header("Настройки разделения")]
     [SerializeField] private int _minChildren = 2;
     [SerializeField] private int _maxChildren = 6;
-    [SerializeField] private float _initialSplitChance = 1.0f;
     [SerializeField] private float _chanceReductionFactor = 2f;
     [SerializeField] private float _scaleMultiplier = 0.5f;
 
@@ -16,72 +16,41 @@ public class CubeSplitter : MonoBehaviour
     [SerializeField] private float _explosionForce = 5f;
     [SerializeField] private float _explosionRadius = 2f;
 
-    private CubeInputReader _cubeInputReader;
-    private CubeSpawner _cubeSpawner;
-    private CubeView _cubeView;
-    private CubePhysics _cubePhysics;
-    private float _currentSplitChance;
-
-    private void Awake()
-    {
-        _cubeInputReader = GetComponent<CubeInputReader>();
-        _cubeView = GetComponent<CubeView>();
-        _cubePhysics = GetComponent<CubePhysics>();
-        _cubeSpawner = FindObjectOfType<CubeSpawner>();
-        _currentSplitChance = _initialSplitChance;
-    }
-
     private void OnEnable()
     {
-        _cubeInputReader.Clicked += OnClicked;
+        _inputReader.CubeClicked += OnCubeClicked;
     }
 
     private void OnDisable()
     {
-        _cubeInputReader.Clicked -= OnClicked;
+        _inputReader.CubeClicked -= OnCubeClicked;
     }
 
-    public void SetRandomColor()
+    private void OnCubeClicked(Cube cube)
     {
-        _cubeView.SetRandomColor();
-    }
-
-    public void ApplyExplosion(Vector3 center, float force, float radius)
-    {
-        _cubePhysics.Explode(center, force, radius);
-    }
-
-    public void SetSplitChance(float chance)
-    {
-        _currentSplitChance = chance;
-    }
-
-    private void OnClicked()
-    {
-        if (UnityEngine.Random.value > _currentSplitChance)
+        if (UnityEngine.Random.value > cube.CurrentSplitChance)
         {
-            Destroy(gameObject);
+            _spawner.Destroy(cube);
             return;
         }
 
-        Split();
+        Split(cube);
     }
 
-    private void Split()
+    private void Split(Cube parent)
     {
         int childCount = UnityEngine.Random.Range(_minChildren, _maxChildren + 1);
-        Vector3 spawnPosition = transform.position;
-        Vector3 childScale = transform.localScale * _scaleMultiplier;
-        float childChance = _currentSplitChance / _chanceReductionFactor;
+        Vector3 spawnPosition = parent.transform.position;
+        Vector3 childScale = parent.transform.localScale * _scaleMultiplier;
+        float childChance = parent.CurrentSplitChance / _chanceReductionFactor;
 
         for (int i = 0; i < childCount; i++)
         {
             Vector3 randomOffset = UnityEngine.Random.insideUnitSphere * 0.3f;
-            CubeSplitter child = _cubeSpawner.Spawn(spawnPosition + randomOffset, childScale, childChance);
-            child.SetRandomColor();
-            child.ApplyExplosion(spawnPosition, _explosionForce, _explosionRadius);
+            Cube child = _spawner.Spawn(spawnPosition + randomOffset, childScale, childChance);
+            _spawner.ApplyExplosion(child, spawnPosition, _explosionForce, _explosionRadius);
         }
 
-        Destroy(gameObject);
+        _spawner.Destroy(parent);
     }
 }
